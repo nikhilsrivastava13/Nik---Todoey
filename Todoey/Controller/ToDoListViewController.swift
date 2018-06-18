@@ -12,34 +12,40 @@ class ToDoListViewController: UITableViewController {
 
     
     var itemArrary = [ToDoItems]()
-    
-    let defaults = UserDefaults.standard
 
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let items1 = ToDoItems()
-        items1.title = "Find Mike"
-        itemArrary.append(items1)
         
-        let items2 = ToDoItems()
-        items2.title = "Buy Eggos"
-        itemArrary.append(items2)
+        print(dataFilePath!)
+
+        loaditems()
         
-        let items3 = ToDoItems()
-        items3.title = "Destroy Demogorgon"
-        itemArrary.append(items3)
+// Old way of defining data in an array. Instead we have defined a function loaddata() above which will get the data from plist file
         
-        let items4 = ToDoItems()
-        items4.title = "Save the World"
-        itemArrary.append(items4)
+//        let items1 = ToDoItems()
+//        items1.title = "Find Mike"
+//        itemArrary.append(items1)
+//
+//        let items2 = ToDoItems()
+//        items2.title = "Buy Eggos"
+//        itemArrary.append(items2)
+//
+//        let items3 = ToDoItems()
+//        items3.title = "Destroy Demogorgon"
+//        itemArrary.append(items3)
+//
+//        let items4 = ToDoItems()
+//        items4.title = "Save the World"
+//        itemArrary.append(items4)
         
-//  This was an old way of defining the item array as User default so that the data in the array is saved and loads up everytime we load          the app. Not a good way to handle the data persistance and hence we created "A Custom data model" which stores messages
+//  This was an old way of loading the item array from User default so that the data in the array loads up everytime we load the app. Not a good way to handle the data persistance and hence we created "A Custom data model" which stores messages
         
-        if let items = defaults.array(forKey: "TodoListArray") as? [ToDoItems] {
-        itemArrary = items
-        }
+//        if let items = defaults.array(forKey: "TodoListArray") as? [ToDoItems] {
+//        itemArrary = items
+//        }
         
     }
 
@@ -80,6 +86,8 @@ class ToDoListViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         itemArrary[indexPath.row].Done = !itemArrary[indexPath.row].Done
+        
+        saveItems()
     
 //        if itemArrary[indexPath.row].Done == false {
 //            itemArrary[indexPath.row].Done = true
@@ -87,7 +95,7 @@ class ToDoListViewController: UITableViewController {
 //            itemArrary[indexPath.row].Done = false
 //        }
         
-        tableView.reloadData()
+
         
         // Flashes the selected item and then goes back to white background
         tableView.deselectRow(at: indexPath, animated: true)
@@ -117,11 +125,8 @@ class ToDoListViewController: UITableViewController {
             let newItem = ToDoItems()
             newItem.title = textField.text!
             
-           self.itemArrary.append(newItem)
-            
-            self.defaults.set(self.itemArrary, forKey: "TodoListArray")
-            
-            self.tableView.reloadData()
+            self.itemArrary.append(newItem)
+            self.saveItems()
         }
         
         alert.addTextField { (alertTextField) in
@@ -133,9 +138,35 @@ class ToDoListViewController: UITableViewController {
         alert.addAction(action)
         
         present (alert, animated: true, completion: nil)
-        
-        
     }
     
-}
+    //MARK - Model Manipulation Methods
+    
+    func saveItems() {
+        let encoder = PropertyListEncoder()
+        
+        do {
+            let data = try encoder.encode(itemArrary)
+            try data.write(to:dataFilePath!)
+        } catch {
+            print("Error encoding item arry, \(error)")
+        }
+        tableView.reloadData()
+    }
+    
+    //MARK - Load Data Method
+    
+    func loaditems() {
+        
+        if let data = try? Data(contentsOf: dataFilePath!) {
+            let decoder = PropertyListDecoder()
+            do {
+            itemArrary = try decoder.decode([ToDoItems].self, from: data)
+            } catch {
+                print("Error decoding item array, \(error)")
+            }
+        }
+    
+    }
 
+}
